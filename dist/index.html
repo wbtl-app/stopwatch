@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stopwatch - wbtl.app</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23ff6b6b'/><stop offset='100%25' stop-color='%23ee5a5a'/></linearGradient></defs><rect width='32' height='32' rx='6' fill='url(%23g)'/><circle cx='16' cy='17' r='9' stroke='white' stroke-width='2' fill='none'/><line x1='16' y1='13' x2='16' y2='17' stroke='white' stroke-width='2' stroke-linecap='round'/><line x1='16' y1='17' x2='19' y2='17' stroke='white' stroke-width='2' stroke-linecap='round'/><line x1='13' y1='4' x2='19' y2='4' stroke='white' stroke-width='2' stroke-linecap='round'/><line x1='16' y1='4' x2='16' y2='8' stroke='white' stroke-width='2' stroke-linecap='round'/></svg>">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f5f7;
+      --text: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --border: #d2d2d7;
+      --toggle-bg: #e5e5e5;
+      --toggle-knob: #ffffff;
+      --tool-gradient-start: #ff6b6b;
+      --tool-gradient-end: #ee5a5a;
+      --success: #34c759;
+      --warning: #ff9500;
+      --danger: #ff3b30;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #000000;
+        --bg-secondary: #1c1c1e;
+        --text: #f5f5f7;
+        --text-secondary: #98989d;
+        --accent: #2997ff;
+        --accent-hover: #40a9ff;
+        --border: #38383a;
+        --toggle-bg: #3a3a3c;
+        --toggle-knob: #ffffff;
+      }
+    }
+
+    [data-theme="dark"] {
+      --bg: #000000;
+      --bg-secondary: #1c1c1e;
+      --text: #f5f5f7;
+      --text-secondary: #98989d;
+      --accent: #2997ff;
+      --accent-hover: #40a9ff;
+      --border: #38383a;
+      --toggle-bg: #3a3a3c;
+      --toggle-knob: #ffffff;
+    }
+
+    [data-theme="light"] {
+      --bg: #ffffff;
+      --bg-secondary: #f5f5f7;
+      --text: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --border: #d2d2d7;
+      --toggle-bg: #e5e5e5;
+      --toggle-knob: #ffffff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .tool-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--tool-gradient-start), var(--tool-gradient-end));
+    }
+
+    .tool-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .tool-name {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .back-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s ease;
+    }
+
+    .back-link:hover {
+      color: var(--accent);
+    }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .theme-toggle svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--text-secondary);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: var(--toggle-bg);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: var(--toggle-knob);
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease;
+    }
+
+    [data-theme="dark"] .toggle-switch::after,
+    :root:not([data-theme="light"]) .toggle-switch::after {
+      transform: translateX(20px);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) .toggle-switch::after {
+        transform: translateX(0);
+      }
+    }
+
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .content {
+      width: 100%;
+    }
+
+    /* Stopwatch specific styles */
+    .stopwatch-container {
+      text-align: center;
+    }
+
+    .time-display {
+      font-size: 4.5rem;
+      font-weight: 300;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      margin-bottom: 2rem;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+      transition: color 0.2s ease;
+    }
+
+    .time-display.running {
+      color: var(--tool-gradient-start);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 100px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--tool-gradient-start), var(--tool-gradient-end));
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--border);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .keyboard-hint {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      margin-bottom: 2rem;
+    }
+
+    .keyboard-hint kbd {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.75rem;
+      margin: 0 0.25rem;
+    }
+
+    /* Stats panel */
+    .stats-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 500;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    }
+
+    .stat-value.best {
+      color: var(--success);
+    }
+
+    .stat-value.worst {
+      color: var(--danger);
+    }
+
+    /* Laps section */
+    .laps-section {
+      margin-bottom: 2rem;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .copy-btn {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: var(--border);
+    }
+
+    .copy-btn.copied {
+      background: var(--success);
+      color: white;
+      border-color: var(--success);
+    }
+
+    .laps-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .lap-item {
+      display: grid;
+      grid-template-columns: 50px 1fr 1fr;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+      font-size: 0.9rem;
+    }
+
+    .lap-item:last-child {
+      border-bottom: none;
+    }
+
+    .lap-item.best {
+      background: rgba(52, 199, 89, 0.1);
+    }
+
+    .lap-item.worst {
+      background: rgba(255, 59, 48, 0.1);
+    }
+
+    .lap-number {
+      color: var(--text-secondary);
+    }
+
+    .lap-time {
+      text-align: center;
+    }
+
+    .split-time {
+      text-align: right;
+      color: var(--text-secondary);
+    }
+
+    .lap-header {
+      display: grid;
+      grid-template-columns: 50px 1fr 1fr;
+      padding: 0.5rem 1rem;
+      background: var(--bg-secondary);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lap-header span:nth-child(2) {
+      text-align: center;
+    }
+
+    .lap-header span:nth-child(3) {
+      text-align: right;
+    }
+
+    .empty-state {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    /* History section */
+    .history-section {
+      margin-top: 2rem;
+    }
+
+    .history-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+
+    .history-toggle:hover {
+      background: var(--border);
+    }
+
+    .history-toggle svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--text-secondary);
+      transition: transform 0.2s ease;
+    }
+
+    .history-toggle.expanded svg {
+      transform: rotate(180deg);
+    }
+
+    .history-content {
+      display: none;
+      margin-top: 1rem;
+    }
+
+    .history-content.show {
+      display: block;
+    }
+
+    .history-item {
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+    }
+
+    .history-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .history-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .history-total {
+      font-weight: 600;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    }
+
+    .history-laps-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.25rem 0;
+      transition: color 0.2s ease;
+    }
+
+    .history-laps-toggle:hover {
+      color: var(--accent);
+    }
+
+    .history-laps-toggle svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      transition: transform 0.2s ease;
+    }
+
+    .history-laps-toggle.expanded svg {
+      transform: rotate(180deg);
+    }
+
+    .history-laps-list {
+      display: none;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .history-laps-list.show {
+      display: block;
+    }
+
+    .history-lap-item {
+      display: grid;
+      grid-template-columns: 40px 1fr 1fr;
+      padding: 0.4rem 0;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .history-lap-item span:nth-child(2) {
+      text-align: center;
+    }
+
+    .history-lap-item span:nth-child(3) {
+      text-align: right;
+    }
+
+    .clear-history {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      background: transparent;
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      color: var(--danger);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .clear-history:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .no-history {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      .tool-name {
+        font-size: 1.1rem;
+      }
+
+      .header-right {
+        gap: 1rem;
+      }
+
+      .back-link {
+        font-size: 0.8rem;
+      }
+
+      .time-display {
+        font-size: 3rem;
+      }
+
+      .controls {
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        min-width: 80px;
+        padding: 0.6rem 1.2rem;
+      }
+
+      .stats-panel {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+
+      .keyboard-hint {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <div class="tool-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="13" r="8"/>
+          <path d="M12 9v4l2 2"/>
+          <path d="M9 2h6"/>
+          <path d="M12 2v2"/>
+        </svg>
+      </div>
+      <div class="tool-name">Stopwatch</div>
+    </div>
+    <div class="header-right">
+      <a href="https://wbtl.app" class="back-link">wbtl.app</a>
+      <div class="theme-toggle">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <div class="toggle-switch" onclick="toggleTheme()" role="button" tabindex="0" aria-label="Toggle dark mode"></div>
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="content">
+      <div class="stopwatch-container">
+        <div class="time-display" id="timeDisplay">00:00.00</div>
+
+        <div class="controls">
+          <button class="btn btn-primary" id="startStopBtn" onclick="toggleStartStop()">Start</button>
+          <button class="btn btn-secondary" id="lapBtn" onclick="recordLap()" disabled>Lap</button>
+          <button class="btn btn-secondary" id="resetBtn" onclick="reset()" disabled>Reset</button>
+        </div>
+
+        <div class="keyboard-hint">
+          <kbd>Space</kbd> Start/Stop
+          <kbd>L</kbd> Lap
+          <kbd>R</kbd> Reset
+        </div>
+
+        <div class="stats-panel" id="statsPanel" style="display: none;">
+          <div class="stat-item">
+            <div class="stat-label">Best Lap</div>
+            <div class="stat-value best" id="bestLap">--:--.-</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Average</div>
+            <div class="stat-value" id="avgLap">--:--.-</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Worst Lap</div>
+            <div class="stat-value worst" id="worstLap">--:--.-</div>
+          </div>
+        </div>
+
+        <div class="laps-section" id="lapsSection" style="display: none;">
+          <div class="section-header">
+            <span class="section-title">Laps</span>
+            <button class="copy-btn" id="copyBtn" onclick="copyLaps()">Copy</button>
+          </div>
+          <div class="laps-list">
+            <div class="lap-header">
+              <span>#</span>
+              <span>Lap Time</span>
+              <span>Split</span>
+            </div>
+            <div id="lapsList"></div>
+          </div>
+        </div>
+
+        <div class="history-section">
+          <button class="history-toggle" id="historyToggle" onclick="toggleHistory()">
+            <span>Session History</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="history-content" id="historyContent">
+            <div id="historyList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Theme handling
+    function getSystemTheme() {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function getStoredTheme() {
+      return localStorage.getItem('wbtl-theme');
+    }
+
+    function setTheme(theme) {
+      if (theme === 'system') {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.removeItem('wbtl-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('wbtl-theme', theme);
+      }
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const system = getSystemTheme();
+
+      if (!current) {
+        setTheme(system === 'dark' ? 'light' : 'dark');
+      } else {
+        if (current === system) {
+          setTheme(current === 'dark' ? 'light' : 'dark');
+        } else {
+          setTheme('system');
+        }
+      }
+    }
+
+    // Initialize theme from storage
+    (function() {
+      const stored = getStoredTheme();
+      if (stored) {
+        setTheme(stored);
+      }
+    })();
+
+    // Handle keyboard for toggle
+    document.querySelector('.toggle-switch').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleTheme();
+      }
+    });
+
+    // Stopwatch logic
+    let startTime = 0;
+    let elapsedTime = 0;
+    let isRunning = false;
+    let animationId = null;
+    let laps = [];
+    let lastLapTime = 0;
+
+    const timeDisplay = document.getElementById('timeDisplay');
+    const startStopBtn = document.getElementById('startStopBtn');
+    const lapBtn = document.getElementById('lapBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statsPanel = document.getElementById('statsPanel');
+    const lapsSection = document.getElementById('lapsSection');
+    const lapsList = document.getElementById('lapsList');
+    const bestLapEl = document.getElementById('bestLap');
+    const avgLapEl = document.getElementById('avgLap');
+    const worstLapEl = document.getElementById('worstLap');
+    const copyBtn = document.getElementById('copyBtn');
+
+    function pad(num) {
+      return num.toString().padStart(2, '0');
+    }
+
+    function formatTime(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const centiseconds = Math.floor((ms % 1000) / 10);
+
+      if (hours > 0) {
+        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;
+      }
+      return `${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;
+    }
+
+    function start() {
+      if (!isRunning) {
+        startTime = performance.now() - elapsedTime;
+        isRunning = true;
+        update();
+        updateUI();
+      }
+    }
+
+    function stop() {
+      if (isRunning) {
+        elapsedTime = performance.now() - startTime;
+        isRunning = false;
+        cancelAnimationFrame(animationId);
+        updateUI();
+      }
+    }
+
+    function toggleStartStop() {
+      if (isRunning) {
+        stop();
+      } else {
+        start();
+      }
+    }
+
+    function update() {
+      if (isRunning) {
+        elapsedTime = performance.now() - startTime;
+        timeDisplay.textContent = formatTime(elapsedTime);
+        animationId = requestAnimationFrame(update);
+      }
+    }
+
+    function reset() {
+      if (isRunning) return;
+
+      // Save session if there's meaningful data
+      if (elapsedTime > 0) {
+        saveSession();
+      }
+
+      startTime = 0;
+      elapsedTime = 0;
+      laps = [];
+      lastLapTime = 0;
+      timeDisplay.textContent = '00:00.00';
+      lapsList.innerHTML = '';
+
+      // Reset stats panel
+      statsPanel.style.display = 'none';
+      bestLapEl.textContent = '00:00.00';
+      avgLapEl.textContent = '00:00.00';
+      worstLapEl.textContent = '00:00.00';
+
+      // Hide laps section
+      lapsSection.style.display = 'none';
+
+      updateUI();
+      loadHistory();
+    }
+
+    function recordLap() {
+      if (!isRunning) return;
+
+      const currentTime = elapsedTime;
+      const lapTime = currentTime - lastLapTime;
+
+      laps.push({
+        number: laps.length + 1,
+        lapTime: lapTime,
+        splitTime: currentTime
+      });
+
+      lastLapTime = currentTime;
+      updateLapDisplay();
+      updateStats();
+    }
+
+    function updateLapDisplay() {
+      if (laps.length === 0) {
+        lapsSection.style.display = 'none';
+        return;
+      }
+
+      lapsSection.style.display = 'block';
+
+      const stats = getLapStats();
+
+      // Display laps in reverse order (newest first)
+      lapsList.innerHTML = laps.slice().reverse().map(lap => {
+        let className = 'lap-item';
+        if (stats && laps.length > 1) {
+          if (lap.lapTime === stats.best) className += ' best';
+          else if (lap.lapTime === stats.worst) className += ' worst';
+        }
+        return `
+          <div class="${className}">
+            <span class="lap-number">${lap.number}</span>
+            <span class="lap-time">${formatTime(lap.lapTime)}</span>
+            <span class="split-time">${formatTime(lap.splitTime)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getLapStats() {
+      if (laps.length === 0) return null;
+
+      const lapTimes = laps.map(l => l.lapTime);
+      return {
+        best: Math.min(...lapTimes),
+        worst: Math.max(...lapTimes),
+        average: lapTimes.reduce((a, b) => a + b, 0) / lapTimes.length
+      };
+    }
+
+    function updateStats() {
+      const stats = getLapStats();
+
+      if (!stats || laps.length < 1) {
+        statsPanel.style.display = 'none';
+        return;
+      }
+
+      statsPanel.style.display = 'grid';
+      bestLapEl.textContent = formatTime(stats.best);
+      avgLapEl.textContent = formatTime(stats.average);
+      worstLapEl.textContent = formatTime(stats.worst);
+    }
+
+    function updateUI() {
+      const hasData = elapsedTime > 0 || laps.length > 0;
+
+      startStopBtn.textContent = isRunning ? 'Stop' : 'Start';
+      lapBtn.disabled = !isRunning;
+      resetBtn.disabled = isRunning || !hasData;
+
+      if (isRunning) {
+        timeDisplay.classList.add('running');
+      } else {
+        timeDisplay.classList.remove('running');
+      }
+    }
+
+    function copyLaps() {
+      if (laps.length === 0) return;
+
+      const text = laps.map(lap =>
+        `Lap ${lap.number}: ${formatTime(lap.lapTime)} (Split: ${formatTime(lap.splitTime)})`
+      ).join('\n');
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+          copyBtn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    // Session history
+    function saveSession() {
+      if (elapsedTime === 0) return;
+
+      const session = {
+        date: new Date().toISOString(),
+        totalTime: elapsedTime,
+        laps: [...laps]
+      };
+
+      const history = JSON.parse(localStorage.getItem('stopwatchHistory') || '[]');
+      history.unshift(session);
+      history.splice(10); // Keep only last 10
+      localStorage.setItem('stopwatchHistory', JSON.stringify(history));
+    }
+
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem('stopwatchHistory') || '[]');
+      const historyList = document.getElementById('historyList');
+
+      if (history.length === 0) {
+        historyList.innerHTML = '<div class="no-history">No session history yet</div>';
+        return;
+      }
+
+      historyList.innerHTML = history.map((session, index) => {
+        const date = new Date(session.date);
+        const dateStr = date.toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const hasLaps = session.laps && session.laps.length > 0;
+        const lapsHtml = hasLaps ? `
+          <div class="history-laps-toggle" onclick="toggleHistoryLaps(${index})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+            <span>${session.laps.length} lap${session.laps.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="history-laps-list" id="historyLaps-${index}">
+            ${session.laps.map(lap => `
+              <div class="history-lap-item">
+                <span>#${lap.number}</span>
+                <span>${formatTime(lap.lapTime)}</span>
+                <span>${formatTime(lap.splitTime)}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : '';
+
+        return `
+          <div class="history-item">
+            <div class="history-item-header">
+              <span class="history-date">${dateStr}</span>
+              <span class="history-total">${formatTime(session.totalTime)}</span>
+            </div>
+            ${lapsHtml}
+          </div>
+        `;
+      }).join('') + `
+        <button class="clear-history" onclick="clearHistory()">Clear History</button>
+      `;
+    }
+
+    function toggleHistory() {
+      const toggle = document.getElementById('historyToggle');
+      const content = document.getElementById('historyContent');
+      toggle.classList.toggle('expanded');
+      content.classList.toggle('show');
+    }
+
+    function toggleHistoryLaps(index) {
+      const lapsList = document.getElementById(`historyLaps-${index}`);
+      const toggle = lapsList.previousElementSibling;
+      toggle.classList.toggle('expanded');
+      lapsList.classList.toggle('show');
+    }
+
+    function clearHistory() {
+      if (confirm('Clear all session history?')) {
+        localStorage.removeItem('stopwatchHistory');
+        loadHistory();
+      }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Don't trigger if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        toggleStartStop();
+      } else if (e.code === 'KeyL' && isRunning) {
+        recordLap();
+      } else if (e.code === 'KeyR' && !isRunning && (elapsedTime > 0 || laps.length > 0)) {
+        reset();
+      }
+    });
+
+    // Initialize
+    loadHistory();
+  </script>
+</body>
+</html>
